@@ -1,13 +1,13 @@
 color c1 = color(100, 120, 120);
 color c2 = color(100, 150, 200);
-Player player = new Player(50, 100, 100, c1);
-Player player2 = new Player(50, 150, 150, c2);
+Player player = new Player(150, 100, 100, c1);
+Player player2 = new Player(100, 1150, 150, c2);
 boolean[] keys = new boolean[4];  // 0: W, 1: A, 2: S, 3: D
 boolean[] keys2 = new boolean[4]; // 0: I (w), 2: J (a), 2: K (s), 3: L (d)
 float threshold = 0.05;
 
 void setup() {
-  size(1280, 1080);
+  size(1920, 1080);
 }
 
 void draw() {
@@ -79,17 +79,24 @@ void keyReleased() {
     keys2[3] = false;
   }
 }
+
 class Player {
   float x;
   float y;
   color c;
+  // size of the circle in diameter
   float size;
   PVector position;
   PVector velocity;
   float accelerateSpeed = 0.1;
   float decelerateSpeed = 0.2;
+  // makes the player decelerate slower
   boolean isSlippy = false;
   float radius;
+  // player loses when this reaches 0
+  int lives = 3;
+  // makes the player invulnerable to obstacles, player collision
+  boolean isInvincible = false;
   
   public Player(float size, int x, int y, color c) {
     this.position = new PVector(x, y);
@@ -111,18 +118,28 @@ class Player {
   public void checkBoundaryCollision() {
     // if the x position == is greater than or equal to the edge of the screen
     if(position.x >= width-(size/2)) {
-      velocity.x *= -1;
+      position.y = height/2;
+      position.x = width/2;
+      velocity.x = 0;
+      velocity.y = 0;
     }
     if(position.y >= height-(size/2)) {
-      velocity.y *= -1;
+      position.y = height/2;
+      position.x = width/2;
+      velocity.x = 0;
+      velocity.y = 0;
     }
     if(position.x < size/2) {
-      position.x = size/2;
-      velocity.x *= -1;
+      position.y = height/2;
+      position.x = width/2;
+      velocity.x = 0;
+      velocity.y = 0;
     }
     if(position.y < size/2) {
-      position.y = size/2;
-      velocity.y *= -1;
+      position.y = height/2;
+      position.x = width/2;
+      velocity.x = 0;
+      velocity.y = 0;
     }
   }
   
@@ -135,10 +152,10 @@ class Player {
     float distanceVectMag = distanceVect.mag();
 
     // Minimum distance before they are touching
-    float minDistance = radius + other.radius;
+    float minDistance = radius + other.radius + 0.5;
 
     if (distanceVectMag < minDistance) {
-      float distanceCorrection = (minDistance-distanceVectMag)/2.0;
+      float distanceCorrection = (minDistance-distanceVectMag)/2.0+5;
       PVector d = distanceVect.copy();
       PVector correctionVector = d.normalize().mult(distanceCorrection);
       other.position.add(correctionVector);
@@ -330,6 +347,7 @@ class Player {
     }
   }
 }
+
 class Obstacle{
         int size;
         int x,y;
