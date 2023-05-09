@@ -79,7 +79,39 @@ void keyReleased() {
     keys2[3] = false;
   }
 }
+class Obstacle{
+        int size;
+        int x,y;
+        int speed;
+        int r,g,b;
+        int progress;
 
+        public Obstacle(int size, int x, int y, int speed, int r, int g, int b, int progress) {
+            this.size = size;
+            this.x = x;
+            this.y = y;
+            this.speed = speed;
+            this.r = r;
+            this.g = g;
+            this.b = b;
+            this.progress = progress;
+        }
+        public void update(){
+            progress = progress + 1;
+            if(progress == 0){
+                //call sprite 0
+            }
+            if(progress == 1){
+                //call sprite 1
+            }
+            if(progress == 2){
+                //call sprite 2
+            }
+
+        }
+
+    }
+}
 class Player {
   float x;
   float y;
