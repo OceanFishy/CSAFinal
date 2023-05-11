@@ -1,28 +1,38 @@
 color c1 = color(100, 120, 120);
 color c2 = color(100, 150, 200);
-Player player = new Player(150, 100, 100, c1);
-Player player2 = new Player(100, 1150, 150, c2);
+color c3 = color(255, 0 , 0);
+Player player = new Player(80, 100, 100, c1);
+Player player2 = new Player(80, 1150, 150, c2);
 boolean[] keys = new boolean[4];  // 0: W, 1: A, 2: S, 3: D
 boolean[] keys2 = new boolean[4]; // 0: I (w), 2: J (a), 2: K (s), 3: L (d)
 float threshold = 0.05;
+Obstacle[] obstacles = new Obstacle[10];
+boolean triggered = false;
 
 void setup() {
   size(1920, 1080);
+  for(int i = 0; i < obstacles.length; i++) {
+    obstacles[i] = new Obstacle((int) random(10, 10), 0, 0, 10, c3);
+  }
+  populate(obstacles);  
 }
 
 void draw() {
   background(255);
   // adjust velocity based on input
   player.updateVelocity(false);
-  player.checkBoundaryCollision();
+  player.checkBoundaryCollision(false);
   player.checkPlayerCollision(player2);
   player.update();
-  player.show();
+  player.show(false);
   player2.updateVelocity(true);
-  player2.checkBoundaryCollision();
+  player2.checkBoundaryCollision(true);
   player2.checkPlayerCollision(player);
   player2.update();
-  player2.show();
+  player2.show(true);
+  for(Obstacle x : obstacles) {
+    x.show();
+  }
 }
 
 void keyPressed() {
@@ -50,7 +60,7 @@ void keyPressed() {
   if (key == 'L' || key == 'l') {
     keys2[3] = true;
   }
-  if(key == 'z' ) player.isSlippy = !player.isSlippy;
+  if(key == 'z' ) player.setSpeed(player.accelerateSpeed+0.2, player.decelerateSpeed+1.5);
 }
 
 void keyReleased() {
@@ -80,6 +90,13 @@ void keyReleased() {
   }
 }
 
+void populate(Obstacle[] bombs) {
+      for(int i = 0; i < bombs.length; i++) {
+        bombs[i].x = random(0, width);
+        bombs[i].y = random(0, height);
+      }
+    }
+
 class Player {
   float x;
   float y;
@@ -88,8 +105,8 @@ class Player {
   float size;
   PVector position;
   PVector velocity;
-  float accelerateSpeed = 0.1;
-  float decelerateSpeed = 0.2;
+  float accelerateSpeed = 0.05;
+  float decelerateSpeed = 0.1;
   // makes the player decelerate slower
   boolean isSlippy = false;
   float radius;
@@ -97,6 +114,7 @@ class Player {
   int lives = 3;
   // makes the player invulnerable to obstacles, player collision
   boolean isInvincible = false;
+  boolean isWinner = false;
   
   public Player(float size, int x, int y, color c) {
     this.position = new PVector(x, y);
@@ -106,40 +124,87 @@ class Player {
     this.c = c;
   }
 
-  public void show() {
+  public void show(boolean two) {
     fill(c);
-    ellipse(position.x, position.y, size, size);
+    if(lives > 0)
+      ellipse(position.x, position.y, size, size);
+    else {
+      if(two) {
+        fill(0, 0, 0);
+        textSize(100);
+        text("Player 1 won!", width/2-300, height/2);
+        
+      }
+      else { 
+        fill(0,0,0);
+        textSize(100);
+        text("Player 2 won!", width/2-300, height/2);
+      }
+    }
   }
 
   public void update() {
     position.add(velocity);
   }
   
-  public void checkBoundaryCollision() {
+  public void setSpeed(float accel, float decel) {
+    this.accelerateSpeed = accel;
+    this.decelerateSpeed = decel;
+  }
+  
+  public void checkBoundaryCollision(boolean two) {
     // if the x position == is greater than or equal to the edge of the screen
     if(position.x >= width-(size/2)) {
-      position.y = height/2;
-      position.x = width/2;
+      if(!two) {
+        position.y = height/2;
+        position.x = width/2 + 150;
+      }
+      else {
+        position.y = height/2;
+        position.x = width/2 - 150;
+      }
       velocity.x = 0;
       velocity.y = 0;
+      lives--;
     }
     if(position.y >= height-(size/2)) {
-      position.y = height/2;
-      position.x = width/2;
+      if(!two) {
+        position.y = height/2;
+        position.x = width/2 + 150;
+      }
+      else {
+        position.y = height/2;
+        position.x = width/2 - 150;
+      }
       velocity.x = 0;
       velocity.y = 0;
+      lives--;
     }
     if(position.x < size/2) {
-      position.y = height/2;
-      position.x = width/2;
+      if(!two) {
+        position.y = height/2;
+        position.x = width/2 + 150;
+      }
+      else {
+        position.y = height/2;
+        position.x = width/2 - 150;
+      }
       velocity.x = 0;
       velocity.y = 0;
+      lives--;
     }
     if(position.y < size/2) {
-      position.y = height/2;
-      position.x = width/2;
+      if(!two) {
+        position.y = height/2;
+        position.x = width/2 + 150;
+      }
+      else {
+        position.y = height/2;
+        position.x = width/2 - 150;
+      }
       velocity.x = 0;
       velocity.y = 0;
+      lives--;
     }
   }
   
@@ -155,7 +220,7 @@ class Player {
     float minDistance = radius + other.radius + 0.5;
 
     if (distanceVectMag < minDistance) {
-      float distanceCorrection = (minDistance-distanceVectMag)/2.0+5;
+      float distanceCorrection = (minDistance-distanceVectMag)/2.0;
       PVector d = distanceVect.copy();
       PVector correctionVector = d.normalize().mult(distanceCorrection);
       other.position.add(correctionVector);
@@ -349,35 +414,45 @@ class Player {
 }
 
 class Obstacle{
-        int size;
-        int x,y;
-        int speed;
-        int r,g,b;
-        int progress;
+  int size;
+  float x,y;
+  float speed;
+  int progress;
+  color c;
 
-        public Obstacle(int size, int x, int y, int speed, int r, int g, int b, int progress) {
-            this.size = size;
-            this.x = x;
-            this.y = y;
-            this.speed = speed;
-            this.r = r;
-            this.g = g;
-            this.b = b;
-            this.progress = progress;
-        }
-        public void update(){
-            progress = progress + 1;
-            if(progress == 0){
-                //call sprite 0
-            }
-            if(progress == 1){
-                //call sprite 1
-            }
-            if(progress == 2){
-                //call sprite 2
-            }
+  public Obstacle(int size, int x, int y, int speed, color c) {
+      this.size = size;
+      this.x = x;
+      this.y = y;
+      this.speed = speed;
+      this.c = c;
+      progress = 0;
+  }
+  public void update(){
+      progress = progress + 1;
+      if(progress == 0){
+          //call sprite 0
+          
+      }
+      else if(progress == 1){
+          //call sprite 1
+      }
+      else if(progress == 2){
+          //call sprite 2
+      }
+  }
+  
+  public void show() {
+    fill(c);
+    rect(size, size, x, y);
+  }
+}
 
-        }
-
-    }
+class Bomb extends Obstacle {
+  float damage;
+  
+  public Bomb(int size, int x, int y, int speed, color c, float damage) {
+    super(size, x, y, speed, c);
+    this.damage = damage;
+  }
 }
