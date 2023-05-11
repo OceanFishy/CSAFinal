@@ -6,15 +6,18 @@ Player player2 = new Player(80, 1150, 150, c2);
 boolean[] keys = new boolean[4];  // 0: W, 1: A, 2: S, 3: D
 boolean[] keys2 = new boolean[4]; // 0: I (w), 2: J (a), 2: K (s), 3: L (d)
 float threshold = 0.05;
-Obstacle[] obstacles = new Obstacle[10];
+Obstacle[] obstacles = new Obstacle[50];
 boolean triggered = false;
+int timer;
 
 void setup() {
   size(1920, 1080);
+  frameRate(60);
   for(int i = 0; i < obstacles.length; i++) {
-    obstacles[i] = new Obstacle((int) random(10, 10), 0, 0, 10, c3);
+    obstacles[i] = new Obstacle((int) random(50, 50), 0, 0, 10, c3);
   }
-  populate(obstacles);  
+  populate(obstacles);
+  timer = 0;
 }
 
 void draw() {
@@ -30,9 +33,6 @@ void draw() {
   player2.checkPlayerCollision(player);
   player2.update();
   player2.show(true);
-  for(Obstacle x : obstacles) {
-    x.show();
-  }
 }
 
 void keyPressed() {
@@ -126,8 +126,12 @@ class Player {
 
   public void show(boolean two) {
     fill(c);
-    if(lives > 0)
+    if(lives > 0) {
       ellipse(position.x, position.y, size, size);
+      fill(255, 255, 255);
+      textSize(32);
+      text(lives+"", position.x-5, position.y+7.5);
+    }
     else {
       if(two) {
         fill(0, 0, 0);
@@ -444,7 +448,7 @@ class Obstacle{
   
   public void show() {
     fill(c);
-    rect(size, size, x, y);
+    rect(x, y, size, size);
   }
 }
 
