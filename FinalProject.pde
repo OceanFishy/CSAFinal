@@ -9,6 +9,9 @@ float threshold = 0.05;
 Obstacle[] obstacles = new Obstacle[50];
 boolean triggered = false;
 int timer;
+final int quarterSecond = 15;
+final int halfSecond = 30;
+final int fullSecond = 60;
 
 void setup() {
   size(1920, 1080);
