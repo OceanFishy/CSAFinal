@@ -1,8 +1,9 @@
 color c1 = color(100, 120, 120);
 color c2 = color(100, 150, 200);
-color c3 = color(255, 0 , 0);
+color obstacleColorTwo = color(255, 0 , 0);
+color obstacleColorOne = color(255, 212, 36);
 Player player = new Player(80, 100, 100, c1);
-Player player2 = new Player(80, 1150, 150, c2);
+Player player2 = new Player(80, 200, 200, c2);
 boolean[] keys = new boolean[4];  // 0: W, 1: A, 2: S, 3: D
 boolean[] keys2 = new boolean[4]; // 0: I (w), 2: J (a), 2: K (s), 3: L (d)
 float threshold = 0.05;
@@ -12,33 +13,81 @@ int timer;
 final int quarterSecond = 15;
 final int halfSecond = 30;
 final int fullSecond = 60;
+int counter = 0;
+boolean isDashingOne = false;
+boolean isDashingTwo = false;
 
 void setup() {
   size(1920, 1080);
   frameRate(60);
   for(int i = 0; i < obstacles.length; i++) {
-    obstacles[i] = new Obstacle((int) random(50, 50), 0, 0, 10, c3);
+    obstacles[i] = new Obstacle((int) random(20, 50), 0, 0, 10, obstacleColorOne, obstacleColorTwo);
   }
   populate(obstacles);
   timer = 0;
 }
 
 void draw() {
-  background(255);
-  // adjust velocity based on input
-  player.updateVelocity(false);
-  player.checkBoundaryCollision(false);
-  player.checkPlayerCollision(player2);
-  player.update();
-  player.show(false);
-  player2.updateVelocity(true);
-  player2.checkBoundaryCollision(true);
-  player2.checkPlayerCollision(player);
-  player2.update();
-  player2.show(true);
+  if(isWinner(player, player2)) {
+    background(255);
+    fill(0, 0, 0);
+    textSize(100);
+    fill(c1);
+    ellipse(width/2-50, height/2-25, player.size, player.size);
+    text("won!", width/2, height/2); 
+  }
+  else if(isWinner(player2, player)) {
+    background(255);
+    fill(0, 0, 0);
+    textSize(100);
+    fill(c2);
+    ellipse(width/2-50, height/2-25, player2.size, player2.size);
+    text("won!", width/2, height/2); 
+  }
+  else {
+    background(255);
+    //every half second spawn a bomb, the time between bombs will get shorter based off of the time
+    if(timer % fullSecond*4 == 0 && timer > fullSecond*3) {
+      if(counter >= 50) counter = 0;
+      obstacles[counter].show();
+      counter++;
+    }
+    //update spawned bombs
+    for(Obstacle x : obstacles) {
+      if(x.isSpawned)
+        x.show();
+    }
+    player.updateVelocity(false);
+    player.dash(isDashingOne);
+    player.checkBoundaryCollision(false);
+    player.checkPlayerCollision(player2);
+    //obstacle collision
+    for(Obstacle x : obstacles) {
+      player.checkObstacleCollision(x, false);
+    }
+    player.update();
+    player.show(false);
+    player2.updateVelocity(true);
+    player2.dash(isDashingTwo);
+    player2.checkBoundaryCollision(true);
+    player2.checkPlayerCollision(player);
+    //obstacle collision
+    for(Obstacle x : obstacles) {
+      player2.checkObstacleCollision(x, true);
+    }
+    player2.update();
+    player2.show(true);
+    timer++;
+  }
 }
 
 void keyPressed() {
+  if(key == 'E' || key == 'e' ) {
+    isDashingOne = true;
+  }
+  if(key == 'O' || key == 'o') {
+    isDashingTwo = true;
+  }
   if (key == 'W' || key == 'w') {
     keys[0] = true;
   }
@@ -63,10 +112,15 @@ void keyPressed() {
   if (key == 'L' || key == 'l') {
     keys2[3] = true;
   }
-  if(key == 'z' ) player.setSpeed(player.accelerateSpeed+0.2, player.decelerateSpeed+1.5);
 }
 
 void keyReleased() {
+  if(key == 'E' || key == 'e' ) {
+    isDashingOne = false;
+  }
+  if(key == 'O' || key == 'o') {
+    isDashingTwo = false;
+  }
   if (key == 'W' || key == 'w') {
     keys[0] = false;
   }
@@ -91,15 +145,63 @@ void keyReleased() {
   if (key == 'L' || key == 'l') {
     keys2[3] = false;
   }
+  
 }
 
 void populate(Obstacle[] bombs) {
       for(int i = 0; i < bombs.length; i++) {
-        bombs[i].x = random(0, width);
-        bombs[i].y = random(0, height);
+        bombs[i].position.x = random(0, width);
+        bombs[i].position.y = random(0, height);
       }
     }
+boolean isWinner(Player player, Player other) {
+  if(player.lives <= 0 && other.lives > 0) {
+    return false;
+  }
+  else if(player.lives > 0 && other.lives <= 0) {
+    return true;
+  }
+  return false;
+}
 
+class Obstacle{
+  int size;
+  PVector position;
+  float speed;
+  int progress;
+  color c;
+  color c2;
+  boolean isSpawned;
+
+  public Obstacle(int size, int x, int y, int speed, color c, color c2) {
+      this.size = size;
+      position = new PVector(x, y);
+      this.speed = speed;
+      this.c = c;
+      this.c2 = c2;
+      progress = 0;
+  }
+  
+  public void show() {
+    isSpawned = true;
+    if(progress <= size) {
+      fill(c);
+      rect(position.x-(progress/2), position.y-(progress/2), progress, progress);
+      progress++;
+    }
+    else if(progress < size+1000) {
+      fill(c2);
+      rect(position.x-(size/2), position.y-(size/2), size, size);
+      progress++;
+    }
+    else {
+      isSpawned = false;
+      progress = 0;
+      position.x = random(0, width);
+      position.y = random(0, height);
+    }
+  }
+}
 class Player {
   float x;
   float y;
@@ -118,6 +220,8 @@ class Player {
   // makes the player invulnerable to obstacles, player collision
   boolean isInvincible = false;
   boolean isWinner = false;
+  float power = 1;
+  int invincTimer = 0;
   
   public Player(float size, int x, int y, color c) {
     this.position = new PVector(x, y);
@@ -135,19 +239,6 @@ class Player {
       textSize(32);
       text(lives+"", position.x-5, position.y+7.5);
     }
-    else {
-      if(two) {
-        fill(0, 0, 0);
-        textSize(100);
-        text("Player 1 won!", width/2-300, height/2);
-        
-      }
-      else { 
-        fill(0,0,0);
-        textSize(100);
-        text("Player 2 won!", width/2-300, height/2);
-      }
-    }
   }
 
   public void update() {
@@ -159,16 +250,57 @@ class Player {
     this.decelerateSpeed = decel;
   }
   
+  public void checkObstacleCollision(Obstacle other, boolean two) {
+    if (!isInvincible && overRect(this, other) && other.progress >= other.size) {
+      if(!two) {
+        position.y = height/2;
+        position.x = width/2 + 150;
+        isInvincible = true;
+      }
+      else {
+        position.y = height/2;
+        position.x = width/2 - 150;
+        isInvincible = true;
+      }
+      velocity.x = 0;
+      velocity.y = 0;
+      lives--;
+      
+    }
+  }
+  // from the "Buttons" example in Processing
+  boolean overRect(Player player, Obstacle other) {
+    if (player.position.x + player.radius > other.position.x - other.size / 2 &&
+        player.position.x - player.radius < other.position.x + other.size / 2 &&
+        player.position.y + player.radius > other.position.y - other.size / 2 &&
+        player.position.y - player.radius < other.position.y + other.size / 2) {
+      return true;
+    }
+    return false;
+  }
+  // same as above but for powerups
+  boolean overRect(Player player, Powerup other) {
+    if (player.position.x + player.radius > other.position.x - other.size / 2 &&
+        player.position.x - player.radius < other.position.x + other.size / 2 &&
+        player.position.y + player.radius > other.position.y - other.size / 2 &&
+        player.position.y - player.radius < other.position.y + other.size / 2) {
+      return true;
+    }
+    return false;
+  }
+  
   public void checkBoundaryCollision(boolean two) {
     // if the x position == is greater than or equal to the edge of the screen
     if(position.x >= width-(size/2)) {
       if(!two) {
         position.y = height/2;
         position.x = width/2 + 150;
+        isInvincible = true;
       }
       else {
         position.y = height/2;
         position.x = width/2 - 150;
+        isInvincible = true;
       }
       velocity.x = 0;
       velocity.y = 0;
@@ -178,10 +310,12 @@ class Player {
       if(!two) {
         position.y = height/2;
         position.x = width/2 + 150;
+        isInvincible = true;
       }
       else {
         position.y = height/2;
         position.x = width/2 - 150;
+        isInvincible = true;
       }
       velocity.x = 0;
       velocity.y = 0;
@@ -191,10 +325,12 @@ class Player {
       if(!two) {
         position.y = height/2;
         position.x = width/2 + 150;
+        isInvincible = true;
       }
       else {
         position.y = height/2;
         position.x = width/2 - 150;
+        isInvincible = true;
       }
       velocity.x = 0;
       velocity.y = 0;
@@ -204,17 +340,19 @@ class Player {
       if(!two) {
         position.y = height/2;
         position.x = width/2 + 150;
+        isInvincible = true;
       }
       else {
         position.y = height/2;
         position.x = width/2 - 150;
+        isInvincible = true;
       }
       velocity.x = 0;
       velocity.y = 0;
       lives--;
     }
   }
-  
+  // from the "CircleCollision" example in Processing
   public void checkPlayerCollision(Player other) {
 
     // Get distances between the balls components
@@ -303,14 +441,15 @@ class Player {
       position.add(bFinal[0]);
 
       // update velocities
-      velocity.x = cosine * vFinal[0].x - sine * vFinal[0].y;
+      velocity.x = (cosine * vFinal[0].x - sine * vFinal[0].y);
       velocity.y = cosine * vFinal[0].y + sine * vFinal[0].x;
-      other.velocity.x = cosine * vFinal[1].x - sine * vFinal[1].y;
-      other.velocity.y = cosine * vFinal[1].y + sine * vFinal[1].x;
+      other.velocity.x = cosine * vFinal[1].x - sine * vFinal[1].y * power;
+      other.velocity.y = cosine * vFinal[1].y + sine * vFinal[1].x * power;
     }
   }
   
   public void updateVelocity(boolean two) {
+    if(isInvincible && ) isInvincible = false;
     if(!two) {
       if(isSlippy) { decelerateSpeed = 0.05; }
         if (keys[0]) {
@@ -418,48 +557,29 @@ class Player {
       }
     }
   }
+  
+  public void dash(boolean isDashing) {
+    if(isDashing) {
+      if(velocity.x > 0) velocity.x += 1;
+      else if(velocity.x < 0) velocity.x -= 1;
+      if(velocity.y > 0) velocity.y += 1;
+      else if(velocity.y < 0) velocity.y -= 1;
+    }
+  }
 }
 
-class Obstacle{
+class Powerup {
   int size;
-  float x,y;
-  float speed;
-  int progress;
-  color c;
-
-  public Obstacle(int size, int x, int y, int speed, color c) {
-      this.size = size;
-      this.x = x;
-      this.y = y;
-      this.speed = speed;
-      this.c = c;
-      progress = 0;
-  }
-  public void update(){
-      progress = progress + 1;
-      if(progress == 0){
-          //call sprite 0
-          
-      }
-      else if(progress == 1){
-          //call sprite 1
-      }
-      else if(progress == 2){
-          //call sprite 2
-      }
+  float power;
+  PVector position;
+  
+  public Powerup(int size, int x, int y) {
+    this.size = size;
+    this.power = size*1.5;
+    this.position = new PVector(x, y);
   }
   
-  public void show() {
-    fill(c);
-    rect(x, y, size, size);
-  }
-}
-
-class Bomb extends Obstacle {
-  float damage;
-  
-  public Bomb(int size, int x, int y, int speed, color c, float damage) {
-    super(size, x, y, speed, c);
-    this.damage = damage;
-  }
+  //public modify(Player other) {
+    
+  //}
 }
