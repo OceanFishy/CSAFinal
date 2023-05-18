@@ -1,3 +1,4 @@
+import processing.sound.*;
 color c1 = color(100, 120, 120);
 color c2 = color(100, 150, 200);
 color obstacleColorTwo = color(255, 0 , 0);
@@ -19,34 +20,23 @@ boolean isDashingTwo = false;
 // timer
 int countSeconds;
 PVector safeZonePos;
+float safeZoneRadius;
 
 void setup() {
   size(1920, 1080);
   frameRate(60);
+  SoundFile song = new SoundFile(this, "Song file.mp3");
+  song.play();
   for(int i = 0; i < obstacles.length; i++) {
     obstacles[i] = new Obstacle((int) random(20, 50), 0, 0, 10, obstacleColorOne, obstacleColorTwo);
   }
   populate(obstacles);
   timer = 0;
   safeZonePos = new PVector(random(player.size+10, width-player.size-10), random(player.size+10, height-player.size));
+  safeZoneRadius = (player.size+60-player.radius)/2;
 }
 
 void draw() {
-  //safe zone and red zone code
-  if(countSeconds<50){
-    background(255);}
-  else if(countSeconds> 50 && countSeconds%2 == 1){
-    background(255,90,120);
-    tint(255,200);}
-  else{
-    background(255);}
-  if(countSeconds >= 50){
-    fill(173,255,179);
-    tint(255,128);
-    ellipse(safeZonePos.x + player.radius, safeZonePos.y + player.radius, player.size+60 - player.radius, player.size+60 - player.radius);
-  }
-  
-  
   if(isWinner(player, player2)) {
     background(255);
     fill(0, 0, 0);
@@ -64,6 +54,31 @@ void draw() {
     text("won!", width/2, height/2); 
   }
   else {
+  //safe zone and red zone code
+ 
+  if (countSeconds >= 60) {
+  // Check if player1 is fully inside the safezone
+  if (dist(player.x, player.y, safeZonePos.x, safeZonePos.y) < safeZoneRadius - player.radius) {
+    player2.lives = 0; // Set player2's lives to 0
+  }
+  // Check if player2 is fully inside the safezone
+  if (dist(player2.x, player2.y, safeZonePos.x, safeZonePos.y) < safeZoneRadius - player2.radius) {
+    player.lives = 0; // Set player's lives to 0
+  }
+}
+
+  if(countSeconds<50){
+    background(255); }
+  else if(countSeconds > 50 && countSeconds%2 == 1) {
+    background(255,90,120);
+    tint(255,200);
+  }
+  background(255);
+  if(countSeconds >= 50) {
+    fill(173,255,179);
+    tint(255,128);
+    ellipse(safeZonePos.x + player.radius, safeZonePos.y + player.radius, player.size+60 - player.radius, player.size+60 - player.radius);
+  }
     //every half second spawn a bomb, the time between bombs will get shorter based off of the time
     if(timer % fullSecond*4 == 0 && timer > fullSecond*3) {
       if(counter >= 50) counter = 0;
@@ -247,7 +262,7 @@ class Player {
   boolean isInvincible = false;
   boolean isWinner = false;
   float power = 1;
-  int invincTimer = 0;
+  int safeTimer = 0;
   
   public Player(float size, int x, int y, color c) {
     this.position = new PVector(x, y);
@@ -269,6 +284,9 @@ class Player {
 
   public void update() {
     position.add(velocity);
+    if(isInvincible && millis() - safeTimer >= 3000) {
+      isInvincible = false;
+    }
   }
   
   public void setSpeed(float accel, float decel) {
@@ -282,16 +300,17 @@ class Player {
         position.y = height/2;
         position.x = width/2 + 150;
         isInvincible = true;
+        safeTimer = millis();
       }
       else {
         position.y = height/2;
         position.x = width/2 - 150;
         isInvincible = true;
+        safeTimer = millis();
       }
       velocity.x = 0;
       velocity.y = 0;
-      lives--;
-      
+      lives--;      
     }
   }
   // from the "Buttons" example in Processing
@@ -322,60 +341,72 @@ class Player {
         position.y = height/2;
         position.x = width/2 + 150;
         isInvincible = true;
+        safeTimer = millis();
       }
       else {
         position.y = height/2;
         position.x = width/2 - 150;
         isInvincible = true;
+        safeTimer = millis();
       }
       velocity.x = 0;
       velocity.y = 0;
-      lives--;
+      if(!isInvincible)
+        lives--;
     }
     if(position.y >= height-(size/2)) {
       if(!two) {
         position.y = height/2;
         position.x = width/2 + 150;
         isInvincible = true;
+        safeTimer = millis();
       }
       else {
         position.y = height/2;
         position.x = width/2 - 150;
         isInvincible = true;
+        safeTimer = millis();
       }
       velocity.x = 0;
       velocity.y = 0;
-      lives--;
+      if(!isInvincible)
+        lives--;
     }
     if(position.x < size/2) {
       if(!two) {
         position.y = height/2;
         position.x = width/2 + 150;
         isInvincible = true;
+        safeTimer = millis();
       }
       else {
         position.y = height/2;
         position.x = width/2 - 150;
         isInvincible = true;
+        safeTimer = millis();
       }
       velocity.x = 0;
       velocity.y = 0;
-      lives--;
+      if(!isInvincible)
+        lives--;
     }
     if(position.y < size/2) {
       if(!two) {
         position.y = height/2;
         position.x = width/2 + 150;
         isInvincible = true;
+        safeTimer = millis();
       }
       else {
         position.y = height/2;
         position.x = width/2 - 150;
         isInvincible = true;
+        safeTimer = millis();
       }
       velocity.x = 0;
       velocity.y = 0;
-      lives--;
+      if(!isInvincible)
+        lives--;
     }
   }
   // from the "CircleCollision" example in Processing
@@ -592,20 +623,4 @@ class Player {
       else if(velocity.y < 0) velocity.y -= 1;
     }
   }
-}
-
-class Powerup {
-  int size;
-  float power;
-  PVector position;
-  
-  public Powerup(int size, int x, int y) {
-    this.size = size;
-    this.power = size*1.5;
-    this.position = new PVector(x, y);
-  }
-  
-  //public modify(Player other) {
-    
-  //}
 }
